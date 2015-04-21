@@ -44,12 +44,12 @@ class engine():
 		self.game.set_icon_highlight(1, True)
 		self.game.set_icon_highlight(2, False)
 		self.game.set_state([[0, 0, 0, 0, 0, 0],
-							 [0, 0, 0, 0, 0, 0],
-							 [0, 0, 0, 0, 0, 0],
-							 [0, 0, 0, 0, 0, 0],
-							 [0, 0, 0, 0, 0, 0],
-							 [0, 0, 0, 0, 0, 0],
-							 [0, 0, 0, 0, 0, 0]])
+                                     [0, 0, 0, 0, 0, 0],
+                                     [0, 0, 0, 0, 0, 0],
+                                     [0, 0, 0, 0, 0, 0],
+                                     [0, 0, 0, 0, 0, 0],
+                                     [0, 0, 0, 0, 0, 0],
+                                     [0, 0, 0, 0, 0, 0]])
 		self.turn = 1
 		self.players = num_of_players
 		self.set_frame("game")
@@ -79,23 +79,7 @@ class engine():
 				return
 	
 	def computer_play(self):
-		copy_board = copy.deepcopy(self.game.state)
-		computer_move = computer.compute(copy_board)
-		self.game.set_square(computer_move[0], computer_move[1], "X")
-
-		# Repeat checking code, except this time spcifically for the computer.
-		result = computer.check_for_win(self.game.state)
-		if result:
-			if result == "O":
-				self.end_game("O")
-			elif result == "X":
-				self.end_game("X")
-			elif result == "_":
-				self.end_game("_")
-			else:
-				raise TypeError("result is invalid. Should be \"O\", \"X\" or \"_\".")
-			return
-		self.change_turn()
+		pass
 		
 	def turn_allowed(self):
 		# If there are two players, then the turn is allowed, definitely.
