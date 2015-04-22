@@ -16,26 +16,59 @@ class State(Enum):
         red = 1
         blue = 2
 
+        def other(self):
+                if self == State.white:
+                        return State.black
+                else: return State.white
+
+
+class Rule(Enum):
+        pass
+
+class square():
+	def __init__(self, x=None, y=None, state=State.empty, availability=True):
+		self.x = x
+		self.y = y
+		self.state = state
+		self.available = availability
+
+class problem():
+        def __init__(self, threat, solution_indices=[]):
+                self.threat = threat
+                self.solutions = solution_indices
+
+class solution():
+        def __init__(self, rule, squareset):
+                self.rule = rule
+                self.squareset = squareset
+
 def check_for_win(board):
         """
         Takes the board and sees if there is a winner ie four in a row of a color.
         Returns 0, 1, or 2 for no winner, player 1 winner, or player 2 winner, respectively.
         """
+        # This is for unity of the whole module; check_for_win was originally in 'board-mode'. Everything
+        #   else in the module was in grid mode, though, and this was the one part that was 'board'. So it
+        #   was modified to 'grid-mode' so as to work with look_ahead and step (which had needed to work with
+        #   both, and failed to do so. So check_for_win had to change).
+        grid = generate_grid(squares)
+
         for col, row in itertools.product(range(7), range(6)):
-                streak_color = board[col][row]
+                streak_color = grid[col][row].state
                 shift_col, shift_row = col, row
-                if streak_color != 0:
+                if streak_color != State.empty:
                         for direction in Direction:
                                 # Reset shifted coordinates to starting point.
                                 shift_col, shift_row = col, row
                                 # Run three times because the original col, row already is the first square.
                                 for streak in range(3):
-                                        print(streak, col, row, shift_col, shift_row, direction)
                                         if look_ahead(shift_col, shift_row, direction):
                                                 shift_col, shift_row = step(shift_col, shift_row, direction)
-                                                if board[shift_col][shift_row] == streak_color: continue
+                                                if grid[shift_col][shift_row].state == streak_color: continue
                                         break
-                                else: return streak_color
+                                else: return streak_color.value
+        # No winner at all after all the squares.
+        return State.empty.value
                                 
 def look_ahead(col, row, direction):
         """
@@ -51,11 +84,11 @@ def step(col, row, direction):
         Takes a coordinate and returns a coordinate pair having moved in the given direction.
         """
         if direction == Direction.north or direction == Direction.northeast:
-                row -= 1
+                row += 1
         if direction == Direction.east or direction == Direction.southeast or direction == Direction.northeast:
                 col += 1
         if direction == Direction.southeast:
-                row += 1
+                row -= 1
 
         return col, row
 
@@ -68,6 +101,7 @@ def compute(board):
         grid = generate_squares(board)
         # Apply each rule to the board and add solutions to master list.
         # Generate problems.
+        problems = generate_problems(grid, State.black)
         # 
 
 def generate_squares(board):
@@ -84,43 +118,68 @@ def generate_squares(board):
                 grid[grid_coords[0]][grid_coords[1]].state = State(board[board_coords[0]][board_coords[1]])
         return grid
 
-class square():
-	def __init__(self, x=None, y=None, state=State.empty, availability=True):
-		self.x = x
-		self.y = y
-		self.state = state
-		self.available = availability
+def generate_problems(board, me):
+        problems = set()
+        for col, row in itertools.product(range(7), range(6)):
+                shift_col, shift_row = col, row
+                if board[col][row].state != me:
+                        for direction in Direction:
+                                # Reset shifted coordinates to starting point.
+                                shift_col, shift_row = col, row
+                                # Run three times because the original col, row already is the first square.
+                                for streak in range(3):
+                                        if look_ahead(shift_col, shift_row, direction):
+                                                shift_col, shift_row = step(shift_col, shift_row, direction)
+                                                if board[shift_col][shift_row].state != me: continue
+                                        break
+                                else:
+                                        problems.add(((col, row), (shift_col, shift_row)))
+        return problems
 
 if __name__ == "__main__":
         print("Function step testing block. Next four printouts should all be 3 3.")
-        print(step(3, 4, Direction.north))
+        print(step(3, 2, Direction.north))
         print(step(2, 3, Direction.east))
-        print(step(2, 4, Direction.northeast))
-        print(step(2, 2, Direction.southeast))
+        print(step(2, 2, Direction.northeast))
+        print(step(2, 4, Direction.southeast))
         print("End block.\n")
 
         print("Function look_ahead testing block. Next eight printouts should be False.")
-        print(look_ahead(2, 0, Direction.north))
+        print(look_ahead(3, 5, Direction.north))
         print(look_ahead(6, 3, Direction.east))
-        print(look_ahead(3, 0, Direction.northeast))
+        print(look_ahead(4, 5, Direction.northeast))
         print(look_ahead(6, 0, Direction.northeast))
         print(look_ahead(6, 5, Direction.northeast))
-        print(look_ahead(4, 5, Direction.southeast))
+        print(look_ahead(4, 0, Direction.southeast))
+        print(look_ahead(6, 4, Direction.southeast))
         print(look_ahead(6, 0, Direction.southeast))
-        print(look_ahead(6, 5, Direction.southeast))
         print("End block.\n")
 
         print("Function generate_squares testing block. First board will be board-style; second will be grid. Should correspond.")
         board = [[0, 0, 0, 0, 0, 0],
-                 [0, 0, 0, 0, 2, 1],
-                 [0, 0, 0, 0, 1, 2],
-                 [0, 0, 2, 1, 0, 0],
-                 [0, 0, 1, 2, 0, 0],
-                 [2, 1, 0, 0, 0, 0],
-                 [1, 2, 0, 0, 0, 0]]
+                 [0, 0, 0, 0, 0, 0],
+                 [1, 2, 1, 2, 1, 1],
+                 [1, 2, 2, 1, 2, 1],
+                 [0, 0, 0, 0, 2, 2],
+                 [0, 0, 0, 0, 0, 0],
+                 [1, 2, 1, 2, 1, 2]]
         print(board)
         board = generate_squares(board)
         for y in range(5, -1, -1):
                 for x in range(7):
                         print(board[x][y].state.name, " ", end="")
                 print()
+        print("End block.\n")
+
+        print("Function generate_problems testing block. Testing based on example contained in Allis' master thesis.")
+        board = [[0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0],
+                 [1, 2, 1, 2, 1, 1],
+                 [1, 2, 2, 1, 2, 1],
+                 [0, 0, 0, 0, 2, 2],
+                 [0, 0, 0, 0, 0, 0],
+                 [1, 2, 1, 2, 1, 2]]
+        problems = generate_problems(generate_squares(board), State.black)
+        for problem in problems:
+                print(str(problem[0][0]) + "," + str(problem[0][1]), "->", str(problem[1][0]) + "," + str(problem[1][1]))
+        print("End block.\n")
