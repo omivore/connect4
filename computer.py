@@ -2,12 +2,17 @@
 
 from enum import Enum
 import itertools
+import copy
 
 class Direction(Enum):
         north = 1
         northeast = 2
         east = 3
         southeast = 4
+        south = 5
+        southwest = 6
+        west = 7
+        northwest = 8
 
 class State(Enum):
         empty = 0
@@ -26,11 +31,14 @@ class Rule(Enum):
         pass
 
 class square():
-	def __init__(self, x=None, y=None, state=State.empty, availability=True):
-		self.x = x
-		self.y = y
-		self.state = state
-		self.available = availability
+        def __init__(self, x=None, y=None, state=State.empty, availability=True):
+                self.x = x
+                self.y = y
+                self.state = state
+                self.available = availability
+
+        def __str__(self):
+                return str(self.x) + ", " + str(self.y) + ": " + self.state.name
 
 class problem():
         def __init__(self, threat, solution_indices=[]):
@@ -57,7 +65,7 @@ def check_for_win(board):
                 streak_color = grid[col][row].state
                 shift_col, shift_row = col, row
                 if streak_color != State.empty:
-                        for direction in Direction:
+                        for direction in [directions for directions in Direction if directions.value in range(5)]:
                                 # Reset shifted coordinates to starting point.
                                 shift_col, shift_row = col, row
                                 # Run three times because the original col, row already is the first square.
@@ -83,12 +91,14 @@ def step(col, row, direction):
         """
         Takes a coordinate and returns a coordinate pair having moved in the given direction.
         """
-        if direction == Direction.north or direction == Direction.northeast:
+        if "north" in direction.name:
                 row += 1
-        if direction == Direction.east or direction == Direction.southeast or direction == Direction.northeast:
-                col += 1
-        if direction == Direction.southeast:
+        elif "south" in direction.name:
                 row -= 1
+        if "east" in direction.name:
+                col += 1
+        elif "west" in direction.name:
+                col -= 1
 
         return col, row
 
@@ -123,7 +133,7 @@ def generate_problems(board, me):
         for col, row in itertools.product(range(7), range(6)):
                 shift_col, shift_row = col, row
                 if board[col][row].state != me:
-                        for direction in Direction:
+                        for direction in [directions for directions in Direction if directions.value in range(5)]:
                                 # Reset shifted coordinates to starting point.
                                 shift_col, shift_row = col, row
                                 # Run three times because the original col, row already is the first square.
@@ -136,7 +146,27 @@ def generate_problems(board, me):
                                         problems.add(((col, row), (shift_col, shift_row)))
         return problems
 
+def is_useful_solution(board, squares, me):
+        testboard = copy.deepcopy(board) # So as to not permanently modify the original.
+        problems = set(generate_problems(testboard, me))
+        for square in squares:
+                testboard[square.x][square.y].state = me
+        new_problems = set(generate_problems(testboard, me))
+        if len(new_problems) < len(problems): return True
+        else: return False
+        
+def print_board(board):
+        """
+        Useful function to print a 2D array of squares in a readable format.
+        DEBUGGING USE ONLY
+        """
+        for y in range(5, -1, -1):
+                for x in range(7):
+                        print(board[x][y].state.name, " ", end="")
+                print()
 if __name__ == "__main__":
+
+
         print("Function step testing block. Next four printouts should all be 3 3.")
         print(step(3, 2, Direction.north))
         print(step(2, 3, Direction.east))
@@ -165,10 +195,7 @@ if __name__ == "__main__":
                  [1, 2, 1, 2, 1, 2]]
         print(board)
         board = generate_squares(board)
-        for y in range(5, -1, -1):
-                for x in range(7):
-                        print(board[x][y].state.name, " ", end="")
-                print()
+        print_board(board)
         print("End block.\n")
 
         print("Function generate_problems testing block. Testing based on example contained in Allis' master thesis.")
@@ -182,4 +209,21 @@ if __name__ == "__main__":
         problems = generate_problems(generate_squares(board), State.black)
         for problem in problems:
                 print(str(problem[0][0]) + "," + str(problem[0][1]), "->", str(problem[1][0]) + "," + str(problem[1][1]))
+        print(len(problems), " problems total.")
+        print("End block.\n")
+
+        print("Testing module rules/claimeven.")
+        import rules.claimeven
+        board = [[0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 1],
+                 [1, 2, 1, 2, 1, 2],
+                 [0, 0, 0, 0, 0, 2],
+                 [0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0]]
+        grid = generate_squares(board)
+        solutions = list(rules.claimeven.generate_solutions(grid, State.black)) # list-ed so I can len() it later.
+        for solution in solutions:
+                print(str(solution.x) + ", " + str(solution.y))
+        print(len(solutions), "solutions total through claimeven.")
         print("End block.\n")
