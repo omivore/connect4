@@ -166,23 +166,22 @@ def generate_problems(board, me):
         return find_streaks(board, 4, ensure_isnt_me)
 
 def is_useful_solution(board, solved, me):
-    for solution in solved:
-        testboard = copy.deepcopy(board) # So as to not permanently modify the original.
-        problems = generate_problems(testboard, me)
-        for square in solution:    
-            testboard[square.x][square.y].state = me
-        new_problems = generate_problems(testboard, me)
+        for solution in solved:
+                testboard = copy.deepcopy(board) # So as to not permanently modify the original.
+                problems = generate_problems(testboard, me)
+                for square in solution: testboard[square.x][square.y].state = me
+                new_problems = generate_problems(testboard, me)
         
-        problems_solved = problems - new_problems
-        for problem_solved in problems_solved:
-                for square in solution:
-                        # Find a solved problem where all squares of the solution are used.
-                        if square.coords() in map(lambda sqr: sqr.coords(), problem_solved):
-                                continue
-                        else: break
-                # All squares must be in current group problem_solved; solution solves this problem.
-                else: return True
-    return False
+                problems_solved = problems - new_problems
+                for problem_solved in problems_solved:
+                        for square in solution:
+                                # Find a solved problem where all squares of the solution are used.
+                                if square.coords() in map(lambda sqr: sqr.coords(), problem_solved):
+                                        continue
+                                else: break
+                        # All squares must be in current group problem_solved; solution solves this problem.
+                        else: return True
+        return False
 
 def print_board(board):
         """
@@ -275,3 +274,15 @@ if __name__ == "__main__":
                  [0, 0, 0, 0, 0, 0]]
         test_rule(rules.baseinverse, board)
         print("End block.\n")
+
+        print("Testing module rules/vertical.")
+        import rules.vertical
+        board = [[0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0],
+                 [0, 2, 2, 2, 1, 1],
+                 [0, 0, 0, 0, 2, 1],
+                 [0, 0, 0, 1, 1, 2],
+                 [0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0]]
+        test_rule(rules.vertical, board)
+        print("End block.\n")        
