@@ -28,9 +28,17 @@ class State(Enum):
 
 
 class Rule(Enum):
-        pass
+        claimeven = 1
+        baseinverse = 2
+        vertical = 3
+        aftereven = 4
+        lowinverse = 5
+        highinverse = 6
+        baseclaim = 7
+        before = 8
+        specialbefore = 9
 
-class square():
+class Square():
         def __init__(self, x=None, y=None, state=State.empty, availability=True):
                 self.x = x
                 self.y = y
@@ -38,17 +46,24 @@ class square():
                 self.available = availability
 
         def __str__(self):
-                return str(self.x) + ", " + str(self.y) + ": " + self.state.name
+                return "<(" + str(self.x) + ", " + str(self.y) + "): " + self.state.name + ">"
 
-class problem():
+        def __repr__(self):
+                return str(self)
+
+        def coords(self):
+                return (self.x, self.y)
+
+class Problem():
         def __init__(self, threat, solution_indices=[]):
                 self.threat = threat
                 self.solutions = solution_indices
 
-class solution():
-        def __init__(self, rule, squareset):
+class Solution():
+        def __init__(self, rule, squares, solved):
                 self.rule = rule
-                self.squareset = squareset
+                self.squares = squares
+                self.solved = solved
 
 def check_for_win(board):
         """
@@ -61,22 +76,37 @@ def check_for_win(board):
         #   both, and failed to do so. So check_for_win had to change).
         grid = generate_grid(squares)
 
+        def ensure_same_color(previous_square_state, current_square_state):
+                if previous_square_state:
+                        if current_square_state == previous_square_state: return True
+                elif current_square_state != State.empty: return True
+                else: return False
+
+        four_streaks = find_streaks(grid, 4, ensure_same_color)
+        
+        if len(four_streaks) > 0:
+                return grid[four_streaks[0][0][0]][four_streaks[0][0][1]].state.value
+        else: return State.empty.value
+
+def find_streaks(board, streak_len, eval_func):
+        streak_instances = set()
         for col, row in itertools.product(range(7), range(6)):
-                streak_color = grid[col][row].state
+                streak_color = board[col][row].state
                 shift_col, shift_row = col, row
-                if streak_color != State.empty:
+                if eval_func(None, streak_color):
                         for direction in [directions for directions in Direction if directions.value in range(5)]:
-                                # Reset shifted coordinates to starting point.
-                                shift_col, shift_row = col, row
-                                # Run three times because the original col, row already is the first square.
-                                for streak in range(3):
+                                streak = [board[col][row]]
+                                shift_col, shift_row = col, row # Reset shifted coordinates to starting point.
+                                # Run only streak_len - 1 times because the original col, row already is the first square.
+                                for time in range(streak_len - 1):
                                         if look_ahead(shift_col, shift_row, direction):
                                                 shift_col, shift_row = step(shift_col, shift_row, direction)
-                                                if grid[shift_col][shift_row].state == streak_color: continue
+                                                if eval_func(streak_color, board[shift_col][shift_row].state): 
+                                                        streak.append(board[shift_col][shift_row])
+                                                        continue
                                         break
-                                else: return streak_color.value
-        # No winner at all after all the squares.
-        return State.empty.value
+                                else: streak_instances.add(tuple(streak))
+        return streak_instances
                                 
 def look_ahead(col, row, direction):
         """
@@ -120,7 +150,7 @@ def generate_squares(board):
         more logical, (0, 0) at bottom left style grid made up of squares, state included.
         Availability of square is not included.
         """
-        grid = [[square() for s in range(6)] for s in range(7)]
+        grid = [[Square() for s in range(6)] for s in range(7)]
         for x, y in itertools.product(range(7), range(6)):
                 grid[x][y].x = x
                 grid[x][y].y = y
@@ -129,32 +159,31 @@ def generate_squares(board):
         return grid
 
 def generate_problems(board, me):
-        problems = set()
-        for col, row in itertools.product(range(7), range(6)):
-                shift_col, shift_row = col, row
-                if board[col][row].state != me:
-                        for direction in [directions for directions in Direction if directions.value in range(5)]:
-                                # Reset shifted coordinates to starting point.
-                                shift_col, shift_row = col, row
-                                # Run three times because the original col, row already is the first square.
-                                for streak in range(3):
-                                        if look_ahead(shift_col, shift_row, direction):
-                                                shift_col, shift_row = step(shift_col, shift_row, direction)
-                                                if board[shift_col][shift_row].state != me: continue
-                                        break
-                                else:
-                                        problems.add(((col, row), (shift_col, shift_row)))
-        return problems
+        def ensure_isnt_me(previous_square_state, current_square_state):
+                if current_square_state != me: return True
+                else: return False
 
-def is_useful_solution(board, squares, me):
+        return find_streaks(board, 4, ensure_isnt_me)
+
+def is_useful_solution(board, solved, me):
+    for solution in solved:
         testboard = copy.deepcopy(board) # So as to not permanently modify the original.
-        problems = set(generate_problems(testboard, me))
-        for square in squares:
-                testboard[square.x][square.y].state = me
-        new_problems = set(generate_problems(testboard, me))
-        if len(new_problems) < len(problems): return True
-        else: return False
+        problems = generate_problems(testboard, me)
+        for square in solution:    
+            testboard[square.x][square.y].state = me
+        new_problems = generate_problems(testboard, me)
         
+        problems_solved = problems - new_problems
+        for problem_solved in problems_solved:
+                for square in solution:
+                        # Find a solved problem where all squares of the solution are used.
+                        if square.coords() in map(lambda sqr: sqr.coords(), problem_solved):
+                                continue
+                        else: break
+                # All squares must be in current group problem_solved; solution solves this problem.
+                else: return True
+    return False
+
 def print_board(board):
         """
         Useful function to print a 2D array of squares in a readable format.
@@ -164,8 +193,17 @@ def print_board(board):
                 for x in range(7):
                         print(board[x][y].state.name, " ", end="")
                 print()
+
 if __name__ == "__main__":
 
+        def test_rule(rule, board):
+                grid = generate_squares(board)
+                solutions = list(rule.generate_solutions(grid, State.black))
+                for solution in solutions:
+                        for square in solution.solved:
+                                print(square, end=" ")
+                        print()
+                print(len(solutions), "solutions total.")
 
         print("Function step testing block. Next four printouts should all be 3 3.")
         print(step(3, 2, Direction.north))
@@ -208,7 +246,9 @@ if __name__ == "__main__":
                  [1, 2, 1, 2, 1, 2]]
         problems = generate_problems(generate_squares(board), State.black)
         for problem in problems:
-                print(str(problem[0][0]) + "," + str(problem[0][1]), "->", str(problem[1][0]) + "," + str(problem[1][1]))
+                for square in problem:
+                        print(square, end=" ")
+                print()
         print(len(problems), " problems total.")
         print("End block.\n")
 
@@ -221,9 +261,17 @@ if __name__ == "__main__":
                  [0, 0, 0, 0, 0, 2],
                  [0, 0, 0, 0, 0, 0],
                  [0, 0, 0, 0, 0, 0]]
-        grid = generate_squares(board)
-        solutions = list(rules.claimeven.generate_solutions(grid, State.black)) # list-ed so I can len() it later.
-        for solution in solutions:
-                print(str(solution.x) + ", " + str(solution.y))
-        print(len(solutions), "solutions total through claimeven.")
+        test_rule(rules.claimeven, board)
+        print("End block.\n")
+
+        print("Testing module rules/baseinverse.")
+        import rules.baseinverse
+        board = [[0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 2, 1, 1],
+                 [0, 0, 0, 0, 2, 1],
+                 [0, 0, 0, 0, 0, 2],
+                 [0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0]]
+        test_rule(rules.baseinverse, board)
         print("End block.\n")
