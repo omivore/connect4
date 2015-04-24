@@ -15,22 +15,11 @@ def generate_solutions(board, me):
                                                   for col in [col1, col2]]):
             squareset = (board[col1][upper1], board[col1][upper1 - 1], board[col1][upper1 - 2], 
                          board[col2][upper2], board[col2][upper2 - 1], board[col2][upper2 - 1])
-            # Yield the two upper squares as solutions.
-            yield computer.Solution(computer.Rule.highinverse, squareset,
-                                    [(board[col1][upper1], board[col2][upper2])])
-            # Yield the two middle squares as solutions.
-            yield computer.Solution(computer.Rule.highinverse, squareset,
-                                    [(board[col1][upper1 - 1], board[col2][upper2 - 1])])
-            # Yield the two pairs of squares at the top of each column.
-            yield computer.Solution(computer.Rule.highinverse, squareset,
-                                    [(board[col1][5], board[col1][4])])
-            yield computer.Solution(computer.Rule.highinverse, squareset,
-                                    [(board[col2][5], board[col2][4])])
-            # If col1 lowest square is playable, yield lower square of col1 and upper square of col2 as solution.
+            # Yield the two upper squares as solutions, the two middle squares as solutions, and the two pairs of squares 
+            #   at the top of each column.
+            solved = [(board[col1][upper1], board[col2][upper2]), (board[col1][upper1 - 1], board[col2][upper2 - 1]), (board[col1][5], board[col1][4]), (board[col2][5], board[col2][4])]
             if board[col1][upper1 - 2].coords() in computer.playables(board):
-                yield computer.Solution(computer.Rule.highinverse, squareset,
-                                        [(board[col1][upper1 - 2], board[col2][upper2])])
-            # Same with col2, except vice versa.
+                solved.append((board[col1][upper1 - 2], board[col2][upper2]))
             if board[col2][upper2 - 2].coords() in computer.playables(board):
-                yield computer.Solution(computer.Rule.highinverse, squareset,
-                                        [(board[col2][upper2 - 2], board[col1][upper1])])
+                solved.append((board[col2][upper2 - 2], board[col1][upper1]))
+            yield computer.Solution(computer.Rule.highinverse, squareset, solved)
