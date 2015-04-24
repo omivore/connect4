@@ -11,5 +11,4 @@ def generate_solutions(board, me):
                 playable.append(row[y])
                 break
     for solved in itertools.combinations(playable, 2):
-        solution = computer.Solution(computer.Rule.baseinverse, solved, [solved])
-        if computer.is_useful_solution(board, solution.solved, me): yield solution
+        yield computer.Solution(computer.Rule.baseinverse, solved, [solved])

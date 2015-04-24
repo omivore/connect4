@@ -51,6 +51,17 @@ class Square():
         def __repr__(self):
                 return str(self)
 
+        def __eq__(self, other):
+                # If *exact* same; state and availability included.
+                if isinstance(other, Square):
+                        if self.x == other.x and self.y == other.y and self.state == other.state and self.available == other.available:
+                                return True
+                        else: return False
+                else: return NotImplemented
+
+        def __hash__(self):
+                return id(self)
+
         def coords(self):
                 return (self.x, self.y)
 
@@ -65,6 +76,16 @@ class Solution():
                 self.squares = squares
                 self.solved = solved
 
+        def __eq__(self, other):
+                if isinstance(other, Solution):
+                        if self.rule == other.rule and self.squares == other.squares and self.solved == other.solved:
+                                return True
+                        else: return False
+                else: return NotImplemented
+
+        def __hash__(self):
+                return id(self)
+
 def check_for_win(board):
         """
         Takes the board and sees if there is a winner ie four in a row of a color.
@@ -76,10 +97,12 @@ def check_for_win(board):
         #   both, and failed to do so. So check_for_win had to change).
         grid = generate_grid(squares)
 
-        def ensure_same_color(previous_square_state, current_square_state):
-                if previous_square_state:
-                        if current_square_state == previous_square_state: return True
-                elif current_square_state != State.empty: return True
+        def ensure_same_color(previous_square_state, current_square_state, direction=None):
+                if direction:
+                        if direction.value not in range(5): return False
+                if previous_square:
+                        if current_square.state == previous_square.state: return True
+                elif current_square.state != State.empty: return True
                 else: return False
 
         four_streaks = find_streaks(grid, 4, ensure_same_color)
@@ -91,17 +114,17 @@ def check_for_win(board):
 def find_streaks(board, streak_len, eval_func):
         streak_instances = set()
         for col, row in itertools.product(range(7), range(6)):
-                streak_color = board[col][row].state
+                streak_origin = board[col][row]
                 shift_col, shift_row = col, row
-                if eval_func(None, streak_color):
-                        for direction in [directions for directions in Direction if directions.value in range(5)]:
+                if eval_func(None, streak_origin):
+                        for direction in Direction:
                                 streak = [board[col][row]]
                                 shift_col, shift_row = col, row # Reset shifted coordinates to starting point.
                                 # Run only streak_len - 1 times because the original col, row already is the first square.
-                                for time in range(streak_len - 1):
+                                for times in range(streak_len - 1):
                                         if look_ahead(shift_col, shift_row, direction):
                                                 shift_col, shift_row = step(shift_col, shift_row, direction)
-                                                if eval_func(streak_color, board[shift_col][shift_row].state): 
+                                                if eval_func(streak_origin, board[shift_col][shift_row], direction): 
                                                         streak.append(board[shift_col][shift_row])
                                                         continue
                                         break
@@ -159,8 +182,10 @@ def generate_squares(board):
         return grid
 
 def generate_problems(board, me):
-        def ensure_isnt_me(previous_square_state, current_square_state):
-                if current_square_state != me: return True
+        def ensure_isnt_me(previous_square, current_square, direction=None):
+                if direction:
+                        if direction.value not in range(5): return False
+                if current_square.state != me: return True
                 else: return False
 
         return find_streaks(board, 4, ensure_isnt_me)
@@ -198,11 +223,14 @@ if __name__ == "__main__":
         def test_rule(rule, board):
                 grid = generate_squares(board)
                 solutions = list(rule.generate_solutions(grid, State.black))
+                useful = 0
                 for solution in solutions:
-                        for square in solution.solved:
-                                print(square, end=" ")
-                        print()
-                print(len(solutions), "solutions total.")
+                        if is_useful_solution(grid, solution.solved, State.black):
+                                for square in solution.solved:
+                                        print(square, end=" ")
+                                print()
+                                useful += 1
+                print(useful, "solutions total through", solutions[0].rule.name + ".")
 
         print("Function step testing block. Next four printouts should all be 3 3.")
         print(step(3, 2, Direction.north))
@@ -286,3 +314,15 @@ if __name__ == "__main__":
                  [0, 0, 0, 0, 0, 0]]
         test_rule(rules.vertical, board)
         print("End block.\n")        
+
+        print("Testing module rules/aftereven.")
+        import rules.aftereven
+        board = [[0, 0, 0, 0, 2, 2],
+                 [0, 0, 1, 2, 1, 1],
+                 [0, 0, 2, 1, 1, 1],
+                 [0, 0, 2, 1, 2, 1],
+                 [0, 0, 2, 1, 2, 2],
+                 [0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0]]
+        test_rule(rules.aftereven, board)
+        print("End block.\n")
