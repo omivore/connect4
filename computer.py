@@ -208,6 +208,15 @@ def is_useful_solution(board, solved, me):
                         else: return True
         return False
 
+def playables(board):
+        playable = []
+        for row in board:
+                for y in range(5):
+                        if row[y].state.value == State.empty.value:
+                                playable.append(row[y].coords())
+                                break
+        return playable
+
 def print_board(board):
         """
         Useful function to print a 2D array of squares in a readable format.
@@ -279,6 +288,17 @@ if __name__ == "__main__":
         print(len(problems), " problems total.")
         print("End block.\n")
 
+        print("Function playables testing block. Should be bottom seven squares' coordinates.")
+        board = [[0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 2, 1, 1],
+                 [0, 0, 0, 0, 2, 1],
+                 [0, 0, 0, 0, 0, 2],
+                 [0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0]]
+        print(playables(generate_squares(board)))
+        print("End block.\n")
+
         print("Testing module rules/claimeven.")
         import rules.claimeven
         board = [[0, 0, 0, 0, 0, 0],
@@ -337,4 +357,16 @@ if __name__ == "__main__":
                  [0, 0, 0, 0, 0, 0],
                  [0, 0, 0, 0, 0, 0]]
         test_rule(rules.lowinverse, board)
+        print("End block.\n") 
+
+        print("Testing module rules/highinverse.")
+        import rules.highinverse
+        board = [[0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 2],
+                 [0, 0, 0, 0, 0, 1],
+                 [0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0]]
+        test_rule(rules.highinverse, board)
         print("End block.\n") 
