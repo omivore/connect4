@@ -192,8 +192,7 @@ def generate_problems(board, me):
 
 def is_useful_solution(board, solved, me):
         for solution in solved:
-                testboard = copy.deepcopy(board) # So as to not permanently modify the original.
-                problems = generate_problems(testboard, me)
+                problems = generate_problems(board, me)
                 for problem in problems:
                         for square in solution:
                                 if square in problem: continue
@@ -362,4 +361,16 @@ if __name__ == "__main__":
                  [0, 0, 0, 0, 0, 0],
                  [0, 0, 0, 0, 0, 0]]
         test_rule(rules.highinverse, board)
+        print("End block.\n") 
+
+        print("Testing module rules/baseclaim.")
+        import rules.baseclaim
+        board = [[0, 0, 0, 0, 0, 2],
+                 [0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0],
+                 [0, 1, 2, 1, 2, 1],
+                 [0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 1],
+                 [0, 0, 0, 0, 0, 2]]
+        test_rule(rules.baseclaim, board)
         print("End block.\n") 
