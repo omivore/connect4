@@ -15,4 +15,5 @@ def generate_solutions(board, me):
             # Yield the two upper squares as solutions.
             yield computer.Solution(computer.Rule.lowinverse, 
                                     (board[col1][upper1], board[col1][upper1 - 1], board[col2][upper2], board[col2][upper2 - 1]),
-                                    [(board[col1][upper1], board[col2][upper2])])
+                                    [(board[col1][upper1], board[col2][upper2]), 
+                                     (board[col1][upper1], board[col1][upper1 - 1]), (board[col2][upper2], board[col2][upper2 - 1])])

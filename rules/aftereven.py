@@ -26,15 +26,17 @@ def generate_solutions(board, me):
     combinations = computer.find_streaks(testboard, 4, ensure_for_aftereven)
 
     # For each combination, get the columns it's composed of, if the original space on the board is empty
-    yielded = set()
-    yielded_add = yielded.add
     for combo in combinations:
         columns = set()
-        for square in combo:
-            if board[square.x][square.y].state.value == computer.State.empty.value:
-                columns.add(square.x)
+        for square in [board[square.x][square.y] for square in combo 
+                       if board[square.x][square.y].state.value == computer.State.empty.value]:
+            columns.add(square.x)
+
         # Yield solutions for each of the squares above the combination's row
-        for column, row in itertools.product(columns, range(combo[0].y + 1, 6)):
-            if board[column][row] not in yielded:
-                yielded_add(board[column][row])
-                yield computer.Solution(computer.Rule.aftereven, combo, [(board[column][row],)])
+        solved = []
+        for squares in itertools.product(*[[board[column][row] for row in range(combo[0].y + 1, 6)] for column in columns]):
+            solved.append(squares)
+        for square in [board[square.x][square.y] for square in combo 
+                       if board[square.x][square.y].state.value == computer.State.empty.value]:
+            solved.append((square,))
+        yield computer.Solution(computer.Rule.aftereven, combo, solved)

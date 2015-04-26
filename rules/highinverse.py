@@ -17,7 +17,8 @@ def generate_solutions(board, me):
                          board[col2][upper2], board[col2][upper2 - 1], board[col2][upper2 - 1])
             # Yield the two upper squares as solutions, the two middle squares as solutions, and the two pairs of squares 
             #   at the top of each column.
-            solved = [(board[col1][upper1], board[col2][upper2]), (board[col1][upper1 - 1], board[col2][upper2 - 1]), (board[col1][5], board[col1][4]), (board[col2][5], board[col2][4])]
+            solved = [(board[col1][upper1], board[col2][upper2]), (board[col1][upper1 - 1], board[col2][upper2 - 1]), 
+                      (board[col1][5], board[col1][4]), (board[col2][5], board[col2][4])]
             if board[col1][upper1 - 2].coords() in computer.playables(board):
                 solved.append((board[col1][upper1 - 2], board[col2][upper2]))
             if board[col2][upper2 - 2].coords() in computer.playables(board):
