@@ -194,17 +194,10 @@ def is_useful_solution(board, solved, me):
         for solution in solved:
                 testboard = copy.deepcopy(board) # So as to not permanently modify the original.
                 problems = generate_problems(testboard, me)
-                for square in solution: testboard[square.x][square.y].state = me
-                new_problems = generate_problems(testboard, me)
-        
-                problems_solved = problems - new_problems
-                for problem_solved in problems_solved:
+                for problem in problems:
                         for square in solution:
-                                # Find a solved problem where all squares of the solution are used.
-                                if square.coords() in map(lambda sqr: sqr.coords(), problem_solved):
-                                        continue
+                                if square in problem: continue
                                 else: break
-                        # All squares must be in current group problem_solved; solution solves this problem.
                         else: return True
         return False
 
