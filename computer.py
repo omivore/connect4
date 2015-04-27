@@ -95,9 +95,9 @@ def check_for_win(board):
         #   else in the module was in grid mode, though, and this was the one part that was 'board'. So it
         #   was modified to 'grid-mode' so as to work with look_ahead and step (which had needed to work with
         #   both, and failed to do so. So check_for_win had to change).
-        grid = generate_grid(squares)
+        grid = generate_squares(board)
 
-        def ensure_same_color(previous_square_state, current_square_state, direction=None):
+        def ensure_same_color(previous_square, current_square, direction=None):
                 if direction:
                         if direction.value not in range(5): return False
                 if previous_square:
@@ -108,7 +108,8 @@ def check_for_win(board):
         four_streaks = find_streaks(grid, 4, ensure_same_color)
         
         if len(four_streaks) > 0:
-                return grid[four_streaks[0][0][0]][four_streaks[0][0][1]].state.value
+                sample = four_streaks.pop()
+                return sample[0].state.value
         else: return State.empty.value
 
 def find_streaks(board, streak_len, eval_func):
@@ -280,6 +281,33 @@ if __name__ == "__main__":
         print(len(problems), " problems total.")
         print("End block.\n")
 
+        print("Function check_for_win testing block. Should return 2, 1, then 0.")
+        board = [[0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0],
+                 [1, 2, 1, 2, 1, 1],
+                 [1, 2, 2, 2, 2, 1],
+                 [0, 0, 0, 0, 2, 2],
+                 [0, 0, 0, 0, 0, 0],
+                 [1, 2, 1, 2, 1, 2]]
+        print(check_for_win(board))
+        board = [[0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 1],
+                 [1, 2, 1, 2, 1, 1],
+                 [1, 2, 2, 1, 2, 1],
+                 [0, 0, 1, 1, 2, 2],
+                 [0, 0, 0, 0, 0, 0],
+                 [1, 2, 1, 2, 1, 2]]
+        print(check_for_win(board))
+        board = [[0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0],
+                 [1, 2, 1, 2, 1, 1],
+                 [1, 2, 2, 1, 2, 1],
+                 [0, 0, 0, 0, 2, 2],
+                 [0, 0, 0, 0, 0, 0],
+                 [1, 2, 1, 2, 1, 2]]
+        print(check_for_win(board))
+        print("End block.\n")
+
         print("Function playables testing block. Should be bottom seven squares' coordinates.")
         board = [[0, 0, 0, 0, 0, 0],
                  [0, 0, 0, 0, 0, 0],
@@ -373,4 +401,16 @@ if __name__ == "__main__":
                  [0, 0, 0, 0, 0, 1],
                  [0, 0, 0, 0, 0, 2]]
         test_rule(rules.baseclaim, board)
+        print("End block.\n") 
+
+        print("Testing module rules/before.")
+        import rules.before
+        board = [[0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0],
+                 [0, 0, 1, 2, 1, 2],
+                 [0, 0, 2, 1, 2, 1],
+                 [0, 0, 2, 1, 2, 1],
+                 [0, 0, 0, 0, 0, 2],
+                 [0, 1, 2, 1, 2, 1]]
+        test_rule(rules.before, board)
         print("End block.\n") 
