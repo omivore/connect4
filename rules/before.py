@@ -11,11 +11,8 @@ def generate_solutions(board, me):
         else: return False
     before_groups = computer.find_streaks(board, 4, ensure_for_before)
 
-    computer.print_board(board)
     for group in before_groups:
         solution = []
         for square in [square for square in group if square.state.value == computer.State.empty.value]:
             solution.append(board[square.x][square.y + 1])
-        print("GROUP:", group)
-        print()
         yield computer.Solution(computer.Rule.before, group, [tuple(solution)])
