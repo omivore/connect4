@@ -190,16 +190,11 @@ def compute(board):
         # Apply each rule to the board
         for solutions in itertools.chain.from_iterable(
                         (__import__(module, fromlist="fill").generate_solutions(grid, State.black) for module in all_rules())):
-                if is_useful_solution(grid, solutions.solved, State.black):
-                        # Go through all problems and where solution solves a problem, assign it to problem.
-                        for solution in solutions.solved:
-                                for problem in problems:
-                                        for square in solution:
-                                                if square in problem.threat: continue
-                                                else: break
-                                        else:
-                                                # Solution solves problem.
-                                                problem.solutions.append(solution)
+                # Go through all problems and where solution solves a problem, assign it to problem.
+                for problem, solution in itertools.product(problems, solutions.solved):
+                        if solution_applies(board, problem, solution):
+                                problem.solutions.append(solution)
+                        else: break
         # Create a node graph of all solutions, where connectedness means incompatibility.
         pass
 
@@ -227,16 +222,12 @@ def generate_problems(board, me):
 
         return find_streaks(board, 4, ensure_isnt_me)
 
-def is_useful_solution(board, solved, me):
-        for solution in solved:
-                problems = generate_problems(board, me)
-                for problem in problems:
-                        for square in solution:
-                                if square in problem: continue
-                                else: break
-                        else: return True
-        return False
-
+def solution_applies(board, threat, solution):
+        for square in solution:
+                if square in threat: continue
+                else: return False
+        else: return True
+        
 def playables(board):
         playable = []
         for row in board:
@@ -255,6 +246,18 @@ def print_board(board):
                 for x in range(7):
                         print(board[x][y].state.name, " ", end="")
                 print()
+
+def is_useful_solution(board, solved, me):
+        """
+        Useful function for seeing if a solution makes an impact.
+        DEBUGGIN USE ONLY
+        """
+        for solution in solved:
+                problems = generate_problems(board, me)
+                for problem in problems:
+                        if solution_applies(board, problem, solution):
+                                return True
+        return False
 
 if __name__ == "__main__":
 
