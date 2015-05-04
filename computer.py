@@ -1,8 +1,18 @@
 # computer.py
 
 from enum import Enum
+import pkgutil
 import itertools
 import copy
+
+# import the rules!
+def all_rules():
+        for importer, modname, ispkg in pkgutil.iter_modules(rules.__path__, rules.__name__ + "."):
+                yield modname
+
+import rules
+for module in all_rules():
+        __import__(module, fromlist="filler")
 
 class Direction(Enum):
         north = 1
@@ -20,7 +30,7 @@ class State(Enum):
         black = 2
         red = 1
         blue = 2
-
+        
         def other(self):
                 if self == State.white:
                         return State.black
@@ -70,6 +80,12 @@ class Problem():
                 self.threat = threat
                 self.solutions = solution_indices
 
+        def __str__(self):
+                return "<" + str(self.threat) + ">" + "\n" + str(self.solutions)
+
+        def __repr__(self):
+                return str(self)
+
 class Solution():
         def __init__(self, rule, squares, solved):
                 self.rule = rule
@@ -85,6 +101,12 @@ class Solution():
 
         def __hash__(self):
                 return id(self)
+
+        def __str__(self):
+                return "[" + str(self.squares) + "]\n"
+
+        def __repr__(self):
+                return str(self)
 
 def check_for_win(board):
         """
@@ -161,12 +183,26 @@ def compute(board):
         Main function to be run by the engine; will return a column number 0-6.
         Takes a 2-dimensional array of the board in the style of the board ie top-down and left-right.
         """
-        # Generate board into 
+        # Convert board into grid.
         grid = generate_squares(board)
-        # Apply each rule to the board and add solutions to master list.
         # Generate problems.
-        problems = generate_problems(grid, State.black)
-        # 
+        problems = {Problem(threat) for threat in generate_problems(grid, State.black)}
+        # Apply each rule to the board
+        for solutions in itertools.chain.from_iterable(
+                        (__import__(module, fromlist="fill").generate_solutions(grid, State.black) for module in all_rules())):
+                if is_useful_solution(grid, solutions.solved, State.black):
+                        # Go through all problems and where solution solves a problem, assign it to problem.
+                        for solution in solutions.solved:
+                                for problem in problems:
+                                        for square in solution:
+                                                if square in problem.threat: continue
+                                                else: break
+                                        else:
+                                                # Solution solves problem.
+                                                problem.solutions.append(solution)
+        # Create a node graph of all solutions, where connectedness means incompatibility.
+        pass
+
 
 def generate_squares(board):
         """
@@ -228,12 +264,12 @@ if __name__ == "__main__":
                 useful = 0
                 for solution in solutions:
                         if is_useful_solution(grid, solution.solved, State.black):
-                                for square in solution.solved:
-                                        print(square, end=" ")
+                                for squares in solution.solved:
+                                        print(squares, end=" ")
                                 print()
                                 useful += 1
                 print(useful, "solutions total through", solutions[0].rule.name + ".")
-
+        """ ---------------------No longer need these tests; mostly through with testing now.--------------------
         print("Function step testing block. Next four printouts should all be 3 3.")
         print(step(3, 2, Direction.north))
         print(step(2, 3, Direction.east))
@@ -320,7 +356,6 @@ if __name__ == "__main__":
         print("End block.\n")
 
         print("Testing module rules/claimeven.")
-        import rules.claimeven
         board = [[0, 0, 0, 0, 0, 0],
                  [0, 0, 0, 0, 0, 0],
                  [0, 0, 0, 0, 0, 1],
@@ -332,7 +367,6 @@ if __name__ == "__main__":
         print("End block.\n")
 
         print("Testing module rules/baseinverse.")
-        import rules.baseinverse
         board = [[0, 0, 0, 0, 0, 0],
                  [0, 0, 0, 0, 0, 0],
                  [0, 0, 0, 2, 1, 1],
@@ -344,7 +378,6 @@ if __name__ == "__main__":
         print("End block.\n")
 
         print("Testing module rules/vertical.")
-        import rules.vertical
         board = [[0, 0, 0, 0, 0, 0],
                  [0, 0, 0, 0, 0, 0],
                  [0, 2, 2, 2, 1, 1],
@@ -356,7 +389,6 @@ if __name__ == "__main__":
         print("End block.\n")        
 
         print("Testing module rules/aftereven.")
-        import rules.aftereven
         board = [[0, 0, 0, 0, 2, 2],
                  [0, 0, 1, 2, 1, 1],
                  [0, 0, 2, 1, 1, 1],
@@ -368,7 +400,6 @@ if __name__ == "__main__":
         print("End block.\n")
 
         print("Testing module rules/lowinverse.")
-        import rules.lowinverse
         board = [[0, 0, 0, 0, 0, 0],
                  [0, 0, 0, 0, 0, 0],
                  [0, 0, 0, 0, 1, 2],
@@ -380,7 +411,6 @@ if __name__ == "__main__":
         print("End block.\n") 
 
         print("Testing module rules/highinverse.")
-        import rules.highinverse
         board = [[0, 0, 0, 0, 0, 0],
                  [0, 0, 0, 0, 0, 0],
                  [0, 0, 0, 0, 0, 2],
@@ -392,7 +422,6 @@ if __name__ == "__main__":
         print("End block.\n") 
 
         print("Testing module rules/baseclaim.")
-        import rules.baseclaim
         board = [[0, 0, 0, 0, 0, 2],
                  [0, 0, 0, 0, 0, 0],
                  [0, 0, 0, 0, 0, 0],
@@ -404,7 +433,6 @@ if __name__ == "__main__":
         print("End block.\n") 
 
         print("Testing module rules/before.")
-        import rules.before
         board = [[0, 0, 0, 0, 0, 0],
                  [0, 0, 0, 0, 0, 0],
                  [0, 0, 1, 2, 1, 2],
@@ -416,7 +444,6 @@ if __name__ == "__main__":
         print("End block.\n") 
 
         print("Testing module rules/specialbefore.")
-        import rules.specialbefore
         board = [[0, 0, 0, 0, 0, 0],
                  [0, 0, 0, 0, 0, 0],
                  [0, 2, 1, 2, 1, 1],
@@ -426,3 +453,13 @@ if __name__ == "__main__":
                  [0, 0, 0, 0, 0, 0]]
         test_rule(rules.specialbefore, board)
         print("End block.\n") 
+        """
+        print("Testing compute.")
+        board = [[0, 0, 0, 0, 0, 0],
+                 [0, 0, 0, 0, 0, 0],
+                 [1, 2, 1, 2, 1, 1],
+                 [1, 2, 2, 1, 2, 1],
+                 [0, 0, 0, 0, 2, 2],
+                 [0, 0, 0, 0, 0, 0],
+                 [1, 2, 1, 2, 1, 2]]
+        compute(board)
