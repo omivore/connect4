@@ -31,6 +31,7 @@ def generate_solutions(board, me):
             solved.append(tuple(solution))
             # Two playables solution
             for playable in playables:
+                if playable == other: continue # Can't have two of the same square
                 solved.append((other, playable)) 
             # Claimeven and Vertical solutions omitted; hopefully they're caught elsewhere? MAY BE AN ISSUE EVENTUALLY
             yield computer.Solution(computer.Rule.specialbefore, group + (other,), solved)

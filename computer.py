@@ -70,7 +70,7 @@ class Square():
                 else: return NotImplemented
 
         def __hash__(self):
-                return id(self)
+                return hash((self.x, self.y, self.state.value))
 
         def coords(self):
                 return (self.x, self.y)
@@ -81,7 +81,7 @@ class Problem():
                 self.solutions = solution_indices
 
         def __str__(self):
-                return "<" + str(self.threat) + ">" + "\n" + str(self.solutions)
+                return "<" + str(self.threat) + ">" + "\n" + str(self.solutions) + "\n"
 
         def __repr__(self):
                 return str(self)
@@ -93,20 +93,30 @@ class Solution():
                 self.solved = solved
 
         def __eq__(self, other):
-                if isinstance(other, Solution):
-                        if self.rule == other.rule and self.squares == other.squares and self.solved == other.solved:
+                if type(other).__name__ == Solution.__name__:
+                        # Change any lists into sets so equality works.
+                        if self.rule == other.rule and set(self.squares) == set(other.squares) and set(self.solved) == set(other.solved):
                                 return True
                         else: return False
                 else: return NotImplemented
 
         def __hash__(self):
-                return id(self)
+                return hash((self.rule.value, self.squares, self.solved))
 
         def __str__(self):
-                return "[" + str(self.squares) + "]\n"
+                return self.rule.name + "\n1-[" + str(self.squares) + "]\n2-[" + str(self.solved) + "]\n"
 
         def __repr__(self):
                 return str(self)
+
+def playables(board):
+        playable = []
+        for row in board:
+                for y in range(5):
+                        if row[y].state.value == State.empty.value:
+                                playable.append(row[y].coords())
+                                break
+        return playable
 
 def check_for_win(board):
         """
@@ -187,18 +197,11 @@ def compute(board):
         grid = generate_squares(board)
         # Generate problems.
         problems = {Problem(threat) for threat in generate_problems(grid, State.black)}
-        # Apply each rule to the board
-        for solutions in itertools.chain.from_iterable(
-                        (__import__(module, fromlist="fill").generate_solutions(grid, State.black) for module in all_rules())):
-                # Go through all problems and where solution solves a problem, assign it to problem.
-                for problem, solution in itertools.product(problems, solutions.solved):
-                        if solution_applies(board, problem, solution):
-                                problem.solutions.append(solution)
-                        else: break
+        # Apply each rule to the board and see which solutions solve which problems
+        link_problems(grid, problems)
         # Create a node graph of all solutions, where connectedness means incompatibility.
-        pass
-
-
+        graph = graph_solutions(solutions)
+        
 def generate_squares(board):
         """
         Takes a graphic coordinate system style board ie the Connect 4 board and turns it into a 
@@ -221,21 +224,23 @@ def generate_problems(board, me):
                 else: return False
 
         return find_streaks(board, 4, ensure_isnt_me)
-
-def solution_applies(board, threat, solution):
-        for square in solution:
-                if square in threat: continue
-                else: return False
-        else: return True
         
-def playables(board):
-        playable = []
-        for row in board:
-                for y in range(5):
-                        if row[y].state.value == State.empty.value:
-                                playable.append(row[y].coords())
-                                break
-        return playable
+def link_problems(board, problems):
+        solution_generator = itertools.chain.from_iterable((__import__(module, fromlist="filler").generate_solutions(board, State.black) for module in all_rules()))
+        for problem, solution in itertools.product(problems, solution_generator):
+                if solution_applies(problem, solution):
+                        problem.solutions.append(solution)                
+
+def solution_applies(problem, solution):
+        for solutionset in solution.solved:
+                for square in solutionset:
+                        if square in problem.threat: continue
+                        else: break
+                else: return True
+        else: return False
+
+def graph_solutions(solutions):
+        pass
 
 def print_board(board):
         """
@@ -250,12 +255,12 @@ def print_board(board):
 def is_useful_solution(board, solved, me):
         """
         Useful function for seeing if a solution makes an impact.
-        DEBUGGIN USE ONLY
+        DEBUGGING USE ONLY
         """
         for solution in solved:
                 problems = generate_problems(board, me)
                 for problem in problems:
-                        if solution_applies(board, problem, solution):
+                        if solution_applies(problem, solution):
                                 return True
         return False
 
@@ -272,7 +277,7 @@ if __name__ == "__main__":
                                 print()
                                 useful += 1
                 print(useful, "solutions total through", solutions[0].rule.name + ".")
-        """ ---------------------No longer need these tests; mostly through with testing now.--------------------
+        
         print("Function step testing block. Next four printouts should all be 3 3.")
         print(step(3, 2, Direction.north))
         print(step(2, 3, Direction.east))
@@ -348,7 +353,7 @@ if __name__ == "__main__":
         print("End block.\n")
 
         print("Function playables testing block. Should be bottom seven squares' coordinates.")
-        board = [[0, 0, 0, 0, 0, 0],
+        board = [[0, 0, 0, 0, 0, 1],
                  [0, 0, 0, 0, 0, 0],
                  [0, 0, 0, 2, 1, 1],
                  [0, 0, 0, 0, 2, 1],
@@ -358,6 +363,17 @@ if __name__ == "__main__":
         print(playables(generate_squares(board)))
         print("End block.\n")
 
+        print("Function solution_applies testing block. Should be true, then false.")
+        print(solution_applies(Problem({Square(0, 0, State.white), Square(0, 1, State.empty), Square(0, 2, State.empty), Square(0, 3, State.empty)}), Solution(Rule.vertical, (Square(0, 1, State.empty), Square(0, 2, State.empty)), [(Square(0, 1, State.empty), Square(0, 2, State.empty))])))
+        print(solution_applies(Problem({Square(0, 0, State.white), Square(0, 1, State.empty), Square(0, 2, State.empty), Square(0, 3, State.empty)}), Solution(Rule.vertical, (Square(0, 3, State.empty), Square(0, 4, State.empty)), [(Square(0, 3, State.empty), Square(0, 4, State.empty))])))
+        print("End block.\n")
+
+        print("Function link_problems testing block.")
+        problems = {Problem({Square(0, 0, State.white), Square(0, 1, State.empty), Square(0, 2, State.empty), Square(0, 3, State.empty)})}
+        link_problems(generate_squares(board), problems)
+        print(problems)
+
+        """---------------------No longer need these tests; mostly through with testing now.--------------------
         print("Testing module rules/claimeven.")
         board = [[0, 0, 0, 0, 0, 0],
                  [0, 0, 0, 0, 0, 0],
@@ -457,12 +473,3 @@ if __name__ == "__main__":
         test_rule(rules.specialbefore, board)
         print("End block.\n") 
         """
-        print("Testing compute.")
-        board = [[0, 0, 0, 0, 0, 0],
-                 [0, 0, 0, 0, 0, 0],
-                 [1, 2, 1, 2, 1, 1],
-                 [1, 2, 2, 1, 2, 1],
-                 [0, 0, 0, 0, 2, 2],
-                 [0, 0, 0, 0, 0, 0],
-                 [1, 2, 1, 2, 1, 2]]
-        compute(board)
