@@ -122,6 +122,7 @@ def check_for_win(board):
         """
         Takes the board and sees if there is a winner ie four in a row of a color.
         Returns 0, 1, or 2 for no winner, player 1 winner, or player 2 winner, respectively.
+        Otherwise, returns None.
         """
         # This is for unity of the whole module; check_for_win was originally in 'board-mode'. Everything
         #   else in the module was in grid mode, though, and this was the one part that was 'board'. So it
@@ -137,12 +138,17 @@ def check_for_win(board):
                 elif current_square.state != State.empty: return True
                 else: return False
 
+        # If board is full, return 0.
+        for square in [square for row in grid for square in row]:
+            if square.state == State.empty: break
+        else: return State.empty.value
+                
         four_streaks = find_streaks(grid, 4, ensure_same_color)
         
         if len(four_streaks) > 0:
                 sample = four_streaks.pop()
                 return sample[0].state.value
-        else: return State.empty.value
+        else: return None
 
 def find_streaks(board, streak_len, eval_func):
         streak_instances = set()
