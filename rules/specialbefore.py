@@ -34,4 +34,4 @@ def generate_solutions(board, me):
                 if playable == other: continue # Can't have two of the same square
                 solved.append((other, playable)) 
             # Claimeven and Vertical solutions omitted; hopefully they're caught elsewhere? MAY BE AN ISSUE EVENTUALLY
-            yield computer.Solution(computer.Rule.specialbefore, group + (other,), solved)
+            yield computer.Solution(computer.Rule.specialbefore, tuple([sq for sq in group if sq != playable]), solved)
