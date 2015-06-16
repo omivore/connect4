@@ -12,8 +12,19 @@ def generate_solutions(board, me):
                                                    and board[col][row].state.value == computer.State.empty.value 
                                                    and board[col][row - 1].state.value == computer.State.empty.value] 
                                                   for col in [col1, col2]]):
+            # Find all the verticals' solutions.
+            vertical = computer.rules.vertical
+            solved = []
+            for solution in vertical.generate_solutions(board, me):
+                for square in solution.squares:
+                    if square in (board[col1][upper1], board[col1][upper1 - 1], board[col2][upper2], board[col2][upper2 - 1]):
+                        continue
+                else:
+                    for solutionset in solution.solved:
+                        solved.append(solutionset)
+                        
             # Yield the two upper squares as solutions.
             yield computer.Solution(computer.Rule.lowinverse, 
                                     (board[col1][upper1], board[col1][upper1 - 1], board[col2][upper2], board[col2][upper2 - 1]),
                                     [(board[col1][upper1], board[col2][upper2]), 
-                                     (board[col1][upper1], board[col1][upper1 - 1]), (board[col2][upper2], board[col2][upper2 - 1])])
+                                     (board[col1][upper1], board[col1][upper1 - 1]), (board[col2][upper2], board[col2][upper2 - 1])] + solved)

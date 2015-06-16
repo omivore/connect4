@@ -29,9 +29,30 @@ def generate_solutions(board, me):
             for square in [square for square in group if square.state.value == computer.State.empty.value]:
                 solution.append(board[square.x][square.y + 1])
             solved.append(tuple(solution))
+
             # Two playables solution
             for playable in playables:
                 if playable == other: continue # Can't have two of the same square
-                solved.append((other, playable)) 
-            # Claimeven and Vertical solutions omitted; hopefully they're caught elsewhere? MAY BE AN ISSUE EVENTUALLY
+                solved.append((other, playable))
+
+            # Find claimeven solutions
+            claimeven = computer.rules.claimeven
+            for solution in claimeven.generate_solutions(board, me):
+                for square in solution.squares:
+                    if square in group + (other,):
+                        continue
+                else:
+                    for solutionset in solution.solved:
+                        solved.append(solutionset)
+                    
+            # Find vertical solutions
+            vertical = computer.rules.vertical
+            for solution in vertical.generate_solutions(board, me):
+                for square in solution.squares:
+                    if square in group + (other,):
+                        continue
+                else:
+                    for solutionset in solution.solved:
+                        solved.append(solutionset)
+                        
             yield computer.Solution(computer.Rule.specialbefore, group + (other,), solved)

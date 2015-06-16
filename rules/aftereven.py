@@ -39,4 +39,15 @@ def generate_solutions(board, me):
         for square in [board[square.x][square.y] for square in combo 
                        if board[square.x][square.y].state.value == computer.State.empty.value]:
             solved.append((square,))
+            
+        # Find the claimevens of this solution and attach to solved
+        claimeven = computer.rules.claimeven
+        for solution in claimeven.generate_solutions(board, me):
+            for square in solution.squares:
+                if square in combo:
+                    continue
+            else:
+                for solutionset in solution.solved:
+                    solved.append(solutionset)
+                        
         yield computer.Solution(computer.Rule.aftereven, combo, solved)

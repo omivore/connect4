@@ -200,7 +200,7 @@ def compute(board):
         # Apply each rule to the board and see which solutions solve which problems
         link_problems(grid, problems)
         # Create a node graph of all solutions, where connectedness means incompatibility.
-        graph = graph_solutions(solutions)
+        graph = graph_solutions(problems)
         
 def generate_squares(board):
         """
