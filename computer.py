@@ -47,6 +47,15 @@ class Rule(Enum):
         baseclaim = 7
         before = 8
         specialbefore = 9
+        
+class Cooperation(Enum):
+        disjoint = 1
+        no_ce_below = 2
+        column_disequal = 3
+        disjoint_and_inversecolumns_disequal = 4
+        
+        disjoint_and_no_ce_below = 5
+        no_ce_below_and_column_disequal = 6
 
 class Square():
         def __init__(self, x=None, y=None, state=State.empty, availability=True):
@@ -202,7 +211,7 @@ def compute(board):
         # Convert board into grid.
         grid = generate_squares(board)
         # Generate problems.
-        problems = {Problem(threat) for threat in generate_problems(grid, State.black)}
+        problems = generate_problems(grid, State.black)
         # Apply each rule to the board and see which solutions solve which problems
         link_problems(grid, problems)
         # Create a node graph of all solutions, where connectedness means incompatibility.
@@ -229,7 +238,7 @@ def generate_problems(board, me):
                 if current_square.state != me: return True
                 else: return False
 
-        return find_streaks(board, 4, ensure_isnt_me)
+        return {Problem(threat) for threat in find_streaks(board, 4, ensure_isnt_me)}
         
 def link_problems(board, problems):
         solution_generator = itertools.chain.from_iterable((__import__(module, fromlist="filler").generate_solutions(board, State.black) for module in all_rules()))
@@ -243,11 +252,111 @@ def solution_applies(problem, solution):
                         if square in problem.threat: continue
                         else: break
                 else: return True
-        else: return False
+        return False
 
 def graph_solutions(solutions):
-        pass
+        graph = {sol:[] for sol in solutions}
+        for key in graph:
+            for other_sol in graph.keys().remove(key):
+                if solutions_cooperate(key, other_sol):
+                    graph[key].append(other_sol)
+        return graph
+        
+def solutions_cooperate(solution1, solution2):
+        poss_combos = {Rule.claimeven:{Rule.claimeven:Cooperation.disjoint,
+                                       Rule.baseinverse:Cooperation.disjoint,
+                                       Rule.vertical:Cooperation.disjoint,
+                                       Rule.aftereven:Cooperation.disjoint,
+                                       Rule.lowinverse:Cooperation.no_ce_below,
+                                       Rule.highinverse:Cooperation.no_ce_below,
+                                       Rule.baseclaim:Cooperation.disjoint,
+                                       Rule.before:Cooperation.disjoint,
+                                       Rule.specialbefore:Cooperation.disjoint,},
+                       Rule.baseinverse:{rule:Cooperation.disjoint for rule in Rule},
+                       Rule.vertical:{rule:Cooperation.disjoint for rule in Rule},
+                       Rule.aftereven:{Rule.claimeven:Cooperation.disjoint,
+                                       Rule.baseinverse:Cooperation.disjoint,
+                                       Rule.vertical:Cooperation.disjoint,
+                                       Rule.aftereven:Cooperation.column_disequal,
+                                       Rule.lowinverse:Cooperation.disjoint_and_no_ce_below,
+                                       Rule.highinverse:Cooperation.disjoint_and_no_ce_below,
+                                       Rule.baseclaim:Cooperation.disjoint,
+                                       Rule.before:Cooperation.column_disequal,
+                                       Rule.specialbefore:Cooperation.column_disequal},
+                       Rule.lowinverse:{Rule.claimeven:Cooperation.no_ce_below,
+                                        Rule.baseinverse:Cooperation.disjoint,
+                                        Rule.vertical:Cooperation.disjoint,
+                                        Rule.aftereven:Cooperation.disjoint_and_no_ce_below,
+                                        Rule.lowinverse:Cooperation.disjoint_and_inversecolumns_disequal,
+                                        Rule.highinverse:Cooperation.disjoint_and_inversecolumns_disequal,
+                                        Rule.baseclaim:Cooperation.disjoint_and_no_ce_below,
+                                        Rule.before:Cooperation.no_ce_below_and_column_disequal,
+                                        Rule.specialbefore:Cooperation.no_ce_below_and_column_disequal},
+                       Rule.highinverse:{Rule.claimeven:Cooperation.no_ce_below,
+                                         Rule.baseinverse:Cooperation.disjoint,
+                                         Rule.vertical:Cooperation.disjoint,
+                                         Rule.aftereven:Cooperation.disjoint_and_no_ce_below,
+                                         Rule.lowinverse:Cooperation.disjoint_and_inversecolumns_disequal,
+                                         Rule.highinverse:Cooperation.disjoint_and_inversecolumns_disequal,
+                                         Rule.baseclaim:Cooperation.disjoint_and_no_ce_below,
+                                         Rule.before:Cooperation.disjoint_and_no_ce_below,
+                                         Rule.specialbefore:Cooperation.disjoint_and_no_ce_below,},
+                       Rule.baseclaim:{Rule.claimeven:Cooperation.disjoint,
+                                       Rule.baseinverse:Cooperation.disjoint,
+                                       Rule.vertical:Cooperation.disjoint,
+                                       Rule.aftereven:Cooperation.disjoint,
+                                       Rule.lowinverse:Cooperation.disjoint_and_no_ce_below,
+                                       Rule.highinverse:Cooperation.disjoint_and_no_ce_below,
+                                       Rule.baseclaim:Cooperation.disjoint,
+                                       Rule.before:Cooperation.disjoint,
+                                       Rule.specialbefore:Cooperation.disjoint},
+                       Rule.before:{Rule.claimeven:Cooperation.disjoint,
+                                    Rule.baseinverse:Cooperation.disjoint,
+                                    Rule.vertical:Cooperation.disjoint,
+                                    Rule.aftereven:Cooperation.column_disequal,
+                                    Rule.lowinverse:Cooperation.no_ce_below_and_column_disequal,
+                                    Rule.highinverse:Cooperation.disjoint_and_no_ce_below,
+                                    Rule.baseclaim:Cooperation.disjoint,
+                                    Rule.before:Cooperation.column_disequal,
+                                    Rule.specialbefore:Cooperation.column_disequal},
+                       Rule.specialbefore:{Rule.claimeven:Cooperation.disjoint,
+                                          Rule.baseinverse:Cooperation.disjoint,
+                                          Rule.vertical:Cooperation.disjoint,
+                                          Rule.aftereven:Cooperation.column_disequal,
+                                          Rule.lowinverse:Cooperation.no_ce_below_and_column_disequal,
+                                          Rule.highinverse:Cooperation.disjoint_and_no_ce_below,
+                                          Rule.baseclaim:Cooperation.disjoint,
+                                          Rule.before:Cooperation.column_disequal,
+                                          Rule.specialbefore:Cooperation.column_disequal}
+        }
 
+        def parse_rules(squareset1, squareset2, interaction_rule):
+                if interaction_rule == Cooperation.disjoint:
+                        for square in squareset1:
+                                if square in squareset2:
+                                        return False
+                        else: return True
+                elif interaction_rule == Cooperation.no_ce_below:
+                        pass
+                elif interaction_rule == Cooperation.column_disequal:
+                        contained = 0
+                        for x in [square.x for square in squareset2]:
+                                if x in [square.x for square in squareset1]: 
+                                        contained += 1
+                        return True if contained == 0 or contained == min(len(squareset1), len(squareset2)) else False
+                elif interaction_rule == Cooperation.disjoint_and_inversecolumns_disequal:
+                        pass
+                elif interaction_rule == Cooperation.disjoint_and_no_ce_below:
+                        return True if parse_rules(squareset1, squareset2, Rule.disjoint) and \
+                                       parse_rules(squareset1, squareset2, Rule.no_ce_below) else False
+                elif interaction_rule == Cooperation.no_ce_below_and_column_disequal:
+                        return True if parse_rules(squareset1, squareset2, Rule.no_ce_below) and \
+                                       parse_rules(squareset1, squareset2, Rule.column_disequal) else False
+                else: raise KeyError
+          
+        return parse_rules(solution1.squares, solution2.squares, poss_combos[solution1.rule][solution2.rule])
+
+        
 def print_board(board):
         """
         Useful function to print a 2D array of squares in a readable format.
@@ -258,16 +367,15 @@ def print_board(board):
                         print(board[x][y].state.name, " ", end="")
                 print()
 
-def is_useful_solution(board, solved, me):
+def is_useful_solution(board, solution, me):
         """
         Useful function for seeing if a solution makes an impact.
         DEBUGGING USE ONLY
         """
-        for solution in solved:
-                problems = generate_problems(board, me)
-                for problem in problems:
-                        if solution_applies(problem, solution):
-                                return True
+        problems = generate_problems(board, me)
+        for problem in problems:
+                if solution_applies(problem, solution):
+                        return True
         return False
 
 if __name__ == "__main__":
@@ -277,7 +385,7 @@ if __name__ == "__main__":
                 solutions = list(rule.generate_solutions(grid, State.black))
                 useful = 0
                 for solution in solutions:
-                        if is_useful_solution(grid, solution.solved, State.black):
+                        if is_useful_solution(grid, solution, State.black):
                                 for squares in solution.solved:
                                         print(squares, end=" ")
                                 print()
@@ -325,7 +433,7 @@ if __name__ == "__main__":
                  [1, 2, 1, 2, 1, 2]]
         problems = generate_problems(generate_squares(board), State.black)
         for problem in problems:
-                for square in problem:
+                for square in problem.threat:
                         print(square, end=" ")
                 print()
         print(len(problems), " problems total.")
@@ -378,6 +486,11 @@ if __name__ == "__main__":
         problems = {Problem({Square(0, 0, State.white), Square(0, 1, State.empty), Square(0, 2, State.empty), Square(0, 3, State.empty)})}
         link_problems(generate_squares(board), problems)
         print(problems)
+        
+        print("Function solutions_cooperate testing block.")
+        print(solutions_cooperate(Solution(Rule.vertical, (Square(0, 3, State.empty), Square(0, 4, State.empty)), [(Square(0, 3, State.empty), Square(0, 4, State.empty))]), Solution(Rule.vertical, (Square(0, 3, State.empty), Square(0, 4, State.empty)), [(Square(0, 3, State.empty), Square(0, 4, State.empty))])))
+        
+        print("Function graph_solutions testing block.")
 
         """---------------------No longer need these tests; mostly through with testing now.--------------------
         print("Testing module rules/claimeven.")
@@ -467,7 +580,7 @@ if __name__ == "__main__":
                  [0, 1, 2, 1, 2, 1]]
         test_rule(rules.before, board)
         print("End block.\n") 
-
+"""
         print("Testing module rules/specialbefore.")
         board = [[0, 0, 0, 0, 0, 0],
                  [0, 0, 0, 0, 0, 0],
@@ -478,4 +591,3 @@ if __name__ == "__main__":
                  [0, 0, 0, 0, 0, 0]]
         test_rule(rules.specialbefore, board)
         print("End block.\n") 
-        """
