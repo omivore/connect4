@@ -10,4 +10,6 @@ def generate_solutions(board, me):
             lower_square = board[lower_x][lower_y]
             if lower_square.state.value == computer.State.empty.value:
                 # Then both are empty
-                yield computer.Solution(computer.Rule.claimeven, (square, lower_square), [(square,)])
+                solution = computer.Solution(computer.Rule.claimeven, (square, lower_square), [(square,)])
+                solution.claimevens = (square, lower_square)
+                yield solution

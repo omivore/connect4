@@ -15,4 +15,29 @@ def generate_solutions(board, me):
         solution = []
         for square in [square for square in group if square.state.value == computer.State.empty.value]:
             solution.append(board[square.x][square.y + 1])
-        yield computer.Solution(computer.Rule.before, group, [tuple(solution)])
+
+        # Find claimeven solutions
+        claimeven = computer.rules.claimeven
+        claimevens = [] # List of claimevens to attach to object property, so that computer knows they are the claimevens
+        for solution in claimeven.generate_solutions(board, me):
+            for square in solution.squares:
+                if square in group + (other,):
+                    continue
+            else:
+                for solutionset in solution.solved:
+                    solved.append(solutionset)
+                    claimevens.append(solutionset)
+                    
+        # Find vertical solutions
+        vertical = computer.rules.vertical
+        for solution in vertical.generate_solutions(board, me):
+            for square in solution.squares:
+                if square in group + (other,):
+                    continue
+            else:
+                for solutionset in solution.solved:
+                    solved.append(solutionset)
+                        
+        solution = computer.Solution(computer.Rule.before, group, [tuple(solution)])
+        solution.claimevens = claimevens
+        yield solution

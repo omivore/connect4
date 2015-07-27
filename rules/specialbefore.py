@@ -37,6 +37,7 @@ def generate_solutions(board, me):
 
             # Find claimeven solutions
             claimeven = computer.rules.claimeven
+            claimevens = [] # List of claimevens to attach to object property, so that computer knows they are the claimevens
             for solution in claimeven.generate_solutions(board, me):
                 for square in solution.squares:
                     if square in group + (other,):
@@ -44,6 +45,7 @@ def generate_solutions(board, me):
                 else:
                     for solutionset in solution.solved:
                         solved.append(solutionset)
+                        claimevens.append(solutionset)
                     
             # Find vertical solutions
             vertical = computer.rules.vertical
@@ -55,4 +57,6 @@ def generate_solutions(board, me):
                     for solutionset in solution.solved:
                         solved.append(solutionset)
                         
-            yield computer.Solution(computer.Rule.specialbefore, group + (other,), solved)
+            solution = computer.Solution(computer.Rule.specialbefore, group + (other,), solved)
+            solution.claimevens = claimevens
+            yield solution

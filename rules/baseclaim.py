@@ -22,5 +22,18 @@ def generate_solutions(board, me):
                 third = square
                 break
 
-        yield computer.Solution(computer.Rule.baseclaim, (first, second, third, non_playable), 
+        # Find the claimeven if present to mark it
+        claimeven = computer.rules.claimeven
+        claimevens = [] # List of claimevens to attach to object property, so that computer knows they are the claimevens
+        for solution in claimeven.generate_solutions(board, me):
+            for square in solution.squares:
+                if square in (first, second, third, non_playable):
+                    continue
+            else:
+                for solutionset in solution.solved:
+                    claimevens.append(solutionset)
+
+        solution = computer.Solution(computer.Rule.baseclaim, (first, second, third, non_playable), 
                                 [(first, non_playable), (third, non_playable), (second, third), (second, first)])
+        solution.claimevens = claimevens
+        yield solution

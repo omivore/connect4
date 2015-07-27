@@ -42,6 +42,7 @@ def generate_solutions(board, me):
             
         # Find the claimevens of this solution and attach to solved
         claimeven = computer.rules.claimeven
+        claimevens = []
         for solution in claimeven.generate_solutions(board, me):
             for square in solution.squares:
                 if square in combo:
@@ -49,5 +50,8 @@ def generate_solutions(board, me):
             else:
                 for solutionset in solution.solved:
                     solved.append(solutionset)
+                    claimevens.append(solutionset)
                         
-        yield computer.Solution(computer.Rule.aftereven, combo, solved)
+        solution = computer.Solution(computer.Rule.aftereven, combo, solved)
+        solution.claimevens = claimevens
+        yield solution
