@@ -2,6 +2,7 @@
 
 from enum import Enum
 import itertools
+import sqlite3
 
 class Direction(Enum):
         north = 1
@@ -30,7 +31,6 @@ def check_for_win(board):
                                 shift_col, shift_row = col, row
                                 # Run three times because the original col, row already is the first square.
                                 for streak in range(3):
-                                        print(streak, col, row, shift_col, shift_row, direction)
                                         if look_ahead(shift_col, shift_row, direction):
                                                 shift_col, shift_row = step(shift_col, shift_row, direction)
                                                 if board[shift_col][shift_row] == streak_color: continue
@@ -124,3 +124,11 @@ if __name__ == "__main__":
                 for x in range(7):
                         print(board[x][y].state.name, " ", end="")
                 print()
+        print()
+        print("Continued testing. Next seven printouts should be white.")
+        print(board[1][0].state.name)
+        print(board[2][1].state.name)
+        print(board[3][2].state.name)
+        print(board[4][3].state.name)
+        print(board[5][4].state.name)
+        print(board[6][5].state.name)
