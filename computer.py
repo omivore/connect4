@@ -17,6 +17,12 @@ class State(Enum):
         red = 1
         blue = 2
 
+class Win(Enum):
+        tie = -1
+        none = 0
+        player1 = 1
+        player2 = 2
+
 def check_for_win(board):
         """
         Takes the board and sees if there is a winner ie four in a row of a color.
@@ -40,14 +46,14 @@ def check_for_win(board):
         # If board is full, return 0.
         for square in [square for row in grid for square in row]:
             if square.state == State.empty: break
-        else: return State.empty.value
+        else: return Win.tie
                 
         four_streaks = find_streaks(grid, 4, ensure_same_color)
         
         if len(four_streaks) > 0:
                 sample = four_streaks.pop()
-                return sample[0].state.value
-        else: return None
+                return Win(sample[0].state.value)
+        else: return Win.none
 
 def find_streaks(board, streak_len, eval_func):
         streak_instances = set()

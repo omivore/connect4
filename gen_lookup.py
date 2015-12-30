@@ -42,7 +42,7 @@ def build_node(new_state):
     pass
     
     winner = computer.check_for_win(new_state)
-    if winner != 0: # If the game is decided, Set the columns to null.
+    if winner != computer.Win.none: # If the game is decided, Set the columns to null.
         col1 = None
 	col2 = None
 	col3 = None
@@ -50,7 +50,7 @@ def build_node(new_state):
 	col5 = None
 	col6 = None
 	col7 = None
-	result = winner
+	result = winner.value
     else: # That is, if the game is undetermined right now.
         col1, result1 = build_node(step_state(new_state, 0))
         col2, result2 = build_node(step_state(new_state, 1))

@@ -63,7 +63,7 @@ class engine():
 		
 		self.set_square(column, self.turn)
 		result = computer.check_for_win(self.game.state)
-		if result != None:
+		if result != computer.Win.none:
 			self.end_game(result)
 			return
 		self.change_turn()
@@ -102,7 +102,7 @@ class engine():
 		else: return True
 		
 	def end_game(self, winner):
-		showinfo("Game Ended", ("Player " + str(winner) + " has won!") if winner != 0 else "Game is a draw")
+		showinfo("Game Ended", "Game is a draw" if winner == computer.Win.tie else ("Player " + str(winner.value) + " has won!"))
 		self.set_frame("welcome")
 
 if __name__ == "__main__":
