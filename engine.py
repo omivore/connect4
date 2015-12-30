@@ -2,7 +2,6 @@
 
 import gui
 import computer
-import copy
 from tkinter import *
 from tkinter.ttk import *
 from tkinter.messagebox import showinfo

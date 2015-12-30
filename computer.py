@@ -2,7 +2,6 @@
 
 from enum import Enum
 import itertools
-import sqlite3
 
 class Direction(Enum):
         north = 1
