@@ -21,21 +21,53 @@ def check_for_win(board):
         """
         Takes the board and sees if there is a winner ie four in a row of a color.
         Returns 0, 1, or 2 for no winner, player 1 winner, or player 2 winner, respectively.
+        Otherwise, returns None.
         """
+        # This is for unity of the whole module; check_for_win was originally in 'board-mode'. Everything
+        #   else in the module was in grid mode, though, and this was the one part that was 'board'. So it
+        #   was modified to 'grid-mode' so as to work with look_ahead and step (which had needed to work with
+        #   both, and failed to do so. So check_for_win had to change).
+        grid = generate_squares(board)
+
+        def ensure_same_color(previous_square, current_square, direction=None):
+                if direction:
+                        if direction.value not in range(5): return False
+                if previous_square:
+                        if current_square.state == previous_square.state: return True
+                elif current_square.state != State.empty: return True
+                else: return False
+
+        # If board is full, return 0.
+        for square in [square for row in grid for square in row]:
+            if square.state == State.empty: break
+        else: return State.empty.value
+                
+        four_streaks = find_streaks(grid, 4, ensure_same_color)
+        
+        if len(four_streaks) > 0:
+                sample = four_streaks.pop()
+                return sample[0].state.value
+        else: return None
+
+def find_streaks(board, streak_len, eval_func):
+        streak_instances = set()
         for col, row in itertools.product(range(7), range(6)):
-                streak_color = board[col][row]
+                streak_origin = board[col][row]
                 shift_col, shift_row = col, row
-                if streak_color != 0:
+                if eval_func(None, streak_origin):
                         for direction in Direction:
-                                # Reset shifted coordinates to starting point.
-                                shift_col, shift_row = col, row
-                                # Run three times because the original col, row already is the first square.
-                                for streak in range(3):
+                                streak = [board[col][row]]
+                                shift_col, shift_row = col, row # Reset shifted coordinates to starting point.
+                                # Run only streak_len - 1 times because the original col, row already is the first square.
+                                for times in range(streak_len - 1):
                                         if look_ahead(shift_col, shift_row, direction):
                                                 shift_col, shift_row = step(shift_col, shift_row, direction)
-                                                if board[shift_col][shift_row] == streak_color: continue
+                                                if eval_func(streak_origin, board[shift_col][shift_row], direction): 
+                                                        streak.append(board[shift_col][shift_row])
+                                                        continue
                                         break
-                                else: return streak_color
+                                else: streak_instances.add(tuple(streak))
+        return streak_instances
                                 
 def look_ahead(col, row, direction):
         """
