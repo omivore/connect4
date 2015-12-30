@@ -34,5 +34,57 @@ root = computer.generate_squares([[0, 0, 0, 0, 0, 0],
                                   [0, 0, 0, 0, 0, 0],
                                   [0, 0, 0, 0, 0, 0]])
 
-def build_node():
+def build_node(new_state):
+    # Receives the state of this node.
+    state_hash = hash(new_state)
+
+    # Check that this node hasn't already been created.
     pass
+    
+    winner = computer.check_for_win(new_state)
+    if winner != 0: # If the game is decided, Set the columns to null.
+        col1 = None
+	col2 = None
+	col3 = None
+	col4 = None
+	col5 = None
+	col6 = None
+	col7 = None
+	result = winner
+    else: # That is, if the game is undetermined right now.
+        col1, result1 = build_node(step_state(new_state, 0))
+        col2, result2 = build_node(step_state(new_state, 1))
+        col3, result3 = build_node(step_state(new_state, 2))
+        col4, result4 = build_node(step_state(new_state, 3))
+        col5, result5 = build_node(step_state(new_state, 4))
+        col6, result6 = build_node(step_state(new_state, 5))
+        col7, result7 = build_node(step_state(new_state, 6))
+        result = compute_result([result1, result2, result3, result4, result5, result6, result7])
+
+    # Enter this node into the database.
+    pass
+    
+    return state_hash, result
+
+def step_state(state, column):
+    new_state = list(state) # Make a copy that's editable.
+    current_player = whose_turn(state)
+    for row in range(6)[::-1]:
+        if new_state[column][row] == 0:
+            new_state[column][row] = current_player
+	    break
+    else: # If for ends without breaking, then return the equivalent of 'column full'.
+        return None 
+    return tuple(new_state) # Turn back into tuple for immutability's sake.
+
+def compute_result(results):
+    pass
+
+def whose_turn(state):
+    # Returns whose turn it is now at the state.
+    checkers = 0
+    for x, y in itertools.product(range(7), range(6)):
+        if state[x][y] != 0: checkers += 1
+    if checkers % 2 == 0: return 1
+    else: return 2
+
