@@ -32,7 +32,7 @@ def check_for_win(board):
         #   else in the module was in grid mode, though, and this was the one part that was 'board'. So it
         #   was modified to 'grid-mode' so as to work with look_ahead and step (which had needed to work with
         #   both, and failed to do so. So check_for_win had to change).
-        grid = generate_squares(board)
+        # 31/12/15 Removing this so gen_lookup has it a bit easier. Engine can suck it up and use generate_squares. grid = generate_squares(board)
 
         def ensure_same_color(previous_square, current_square, direction=None):
                 if direction:
@@ -43,11 +43,11 @@ def check_for_win(board):
                 else: return False
 
         # If board is full, return 0.
-        for square in [square for row in grid for square in row]:
+        for square in [square for row in board for square in row]:
             if square.state == State.empty: break
         else: return Win.tie
                 
-        four_streaks = find_streaks(grid, 4, ensure_same_color)
+        four_streaks = find_streaks(board, 4, ensure_same_color)
         
         if len(four_streaks) > 0:
                 sample = four_streaks.pop()

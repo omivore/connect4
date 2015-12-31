@@ -61,7 +61,7 @@ class engine():
 		if not self.move_allowed(column): return
 		
 		self.set_square(column, self.turn)
-		result = computer.check_for_win(self.game.state)
+		result = computer.check_for_win(computer.generate_squares(self.game.state))
 		if result != computer.Win.none:
 			self.end_game(result)
 			return
