@@ -26,6 +26,7 @@ c.execute('''CREATE TABLE IF NOT EXISTS game_states
              FOREIGN KEY(col6) REFERENCES game_states(state_hash),
              FOREIGN KEY(col7) REFERENCES game_states(state_hash)
              )''')
+conn.commit()
 
 root = computer.generate_squares([[0, 0, 0, 0, 0, 0],
                                   [0, 0, 0, 0, 0, 0],
@@ -37,10 +38,15 @@ root = computer.generate_squares([[0, 0, 0, 0, 0, 0],
 
 def build_node(new_state):
     # Receives the state of this node.
-    state_hash = hash(new_state)
+    state_hash = hash(list_to_tuple(new_state))
 
     # Check that this node hasn't already been created.
-    pass
+    c.execute("SELECT EXISTS(SELECT 1 FROM game_states WHERE state_hash=? LIMIT 1)", (state_hash,))
+    if c.fetchone() != (0,):
+        # If this node already exists, then don't bother calculating the result; just pass it on.
+        c.execute("SELECT result FROM game_states WHERE state_hash=? LIMIT 1", (state_hash,))
+        result = c.fetchone()
+        return state_hash, result[0]
     
     winner = computer.check_for_win(new_state)
     if winner != computer.Win.none: # If the game is decided, Set the columns to null.
@@ -52,18 +58,23 @@ def build_node(new_state):
         col6 = None
         col7 = None
         result = winner.value
-    else: # That is, if the game is undetermined right now.
-        col1, result1 = build_node(step_state(new_state, 0))
-        col2, result2 = build_node(step_state(new_state, 1))
-        col3, result3 = build_node(step_state(new_state, 2))
-        col4, result4 = build_node(step_state(new_state, 3))
-        col5, result5 = build_node(step_state(new_state, 4))
-        col6, result6 = build_node(step_state(new_state, 5))
-        col7, result7 = build_node(step_state(new_state, 6))
+    else: # That is, if the game is undetermined right now. If the column is full, then that column is None, because there aren't any more possibilities/branches that way.
+        col1, result1 = build_node(step_state(new_state, 0)) if step_state(new_state, 0) != None else (None, None)
+        col2, result2 = build_node(step_state(new_state, 1)) if step_state(new_state, 1) != None else (None, None)
+        col3, result3 = build_node(step_state(new_state, 2)) if step_state(new_state, 2) != None else (None, None)
+        col4, result4 = build_node(step_state(new_state, 3)) if step_state(new_state, 3) != None else (None, None)
+        col5, result5 = build_node(step_state(new_state, 4)) if step_state(new_state, 4) != None else (None, None)
+        col6, result6 = build_node(step_state(new_state, 5)) if step_state(new_state, 5) != None else (None, None)
+        col7, result7 = build_node(step_state(new_state, 6)) if step_state(new_state, 6) != None else (None, None)
         result = compute_result(whose_turn(new_state), [result1, result2, result3, result4, result5, result6, result7])
 
     # Enter this node into the database.
-    pass
+    try:
+        c.execute("INSERT INTO game_states VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (state_hash, result, col1, col2, col3, col4, col5, col6, col7))
+        conn.commit()
+    except sqlite3.InterfaceError as e:
+        print(e)
+        print("Data:", state_hash, result, col1, col2, col3, col4, col5, col6, col7)
     
     return state_hash, result
 
@@ -81,7 +92,17 @@ def step_state(state, column):
     return new_state
 
 def compute_result(player, results):
-   pass 
+    # If there's at least one player's win in results, player can choose it, b/c it's player's turn. So player wins this node.
+    if player in results:
+        return player
+    # If there isn't, then if there's a tie they can go for that instead.
+    if computer.Win.tie.value in results:
+        return computer.Win.tie.value # ie -1
+    # Since player gets to choose this turn, the only way other can win is if there's no other choice but to go the way of death.
+    else:
+        return 1 if player == 2 else 2
+
+    # This applies to both sides; it doesn't matter because compute_result decides based on the current player who's going.
 
 def whose_turn(state):
     # Returns whose turn it is now at the state.
@@ -91,11 +112,34 @@ def whose_turn(state):
     if checkers % 2 == 0: return 1
     else: return 2
 
-if __name__ == "__main__":
-    print(root)
-    print("Testing step_state...")
-    new_state = step_state(root, 2)
-    print(new_state)
-    print(new_state[2][0].state)
-    print("Testing whose_turn...")
-    print(whose_turn(new_state))
+def list_to_tuple(list_board):
+    return tuple(tuple(x for x in list_columns) for list_columns in list_board)
+
+##def print_board(board):
+##    """
+##    Useful function to print a 2D array of squares in a readable format.
+##    DEBUGGING USE ONLY
+##    """
+##    for y in range(5, -1, -1):
+##        for x in range(7):
+##            print(board[x][y].state.name, " ", end="")
+##        print()
+##    print()
+
+##print(root)
+##print("Testing step_state...")
+##new_state = step_state(root, 2)
+##print(new_state)
+##print(new_state[2][0].state)
+##print("Testing whose_turn...")
+##print(whose_turn(new_state))
+##print("Testing list_to_tuple...")
+##print(list_to_tuple(root))
+##print("Testing compute_result...")
+##assert(compute_result(2, [-1, 1, 1, 2, 1, -1, -1]) == 2)
+
+try:
+    build_node(root)
+except KeyboardInterrupt:
+    c.close()
+    conn.close()
