@@ -2,6 +2,8 @@
 
 from enum import Enum
 import itertools
+import sqlite3
+from gen_lookup import list_to_tuple, whose_turn
 
 class Direction(Enum):
         north = 1
@@ -103,9 +105,24 @@ def compute(board):
         """
         # Generate board into 
         grid = generate_squares(board)
-        # Apply each rule to the board and add solutions to master list.
-        # Generate problems.
-        # 
+        # Connect to lookup.db and find the correct column to go for.
+        conn = sqlite3.connect("lookup.db")
+        c = conn.cursor()
+        c.execute("SELECT col1, col2, col3, col4, col5, col6, col7 FROM game_states WHERE state_hash=? LIMIT 1", hash(list_to_tuple(grid)))
+        options = c.fetchone()
+        if not options: raise NameError("Current board configuration is not in the lookup database.")
+        for index, option in options.enumerate():
+                pass
+        try: return options.index(whose_turn(grid)) # If the current player has a win option in the grid, choose it.
+        except ValueError: pass
+        try: return options.index(Win.tie.value) # Otherwise, try for a tie.
+        except ValueError: pass
+        try: return options.index(1 if whose_turn(grid) == 2 else 2) # Last but not least, go for the other if there's no other way.
+        except ValueError: pass
+
+        # If we get to here, then there are problems.
+        print(options, file=sys.stderr)
+        raise NameError("None of the three possible options are in options.")
 
 def generate_squares(board):
         """

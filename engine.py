@@ -68,7 +68,7 @@ class engine():
 		self.change_turn()
 		
 		# Now deal with the computer player's move if this is a one-player game.
-		#if self.players == 1: self.game.after(100, self.computer_play)
+		if self.players == 1: self.game.after(100, self.computer_play)
 		
 	def set_square(self, column, player):
 		# Assumes column is not full
@@ -78,7 +78,7 @@ class engine():
 				return
 	
 	def computer_play(self):
-		pass
+		computer.compute(self.game.state)
 		
 	def turn_allowed(self):
 		# If there are two players, then the turn is allowed, definitely.
